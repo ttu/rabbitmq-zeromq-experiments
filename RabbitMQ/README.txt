@@ -22,3 +22,14 @@ Debug -> Start new instance
 
 Other links:
 http://www.codeproject.com/Articles/309786/Rabbit-Mq-Shovel-Example
+
+----------------------
+
+Scatter Gather:
+http://www.eaipatterns.com/BroadcastAggregate.html
+
+Implementation in this project has only 1 work queue, but Producer could send messages through Exchange.
+
+----------------------
+
+xml files are Draw.io diagrams

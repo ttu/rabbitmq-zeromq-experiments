@@ -47,6 +47,8 @@
     <Compile Include="PubSub\ConsumerWithExchange.cs" />
     <Compile Include="Data\CommonReply.cs" />
     <Compile Include="Data\CommonRequest.cs" />
+    <Compile Include="ScatterGather\ScatterGatherConsumer.cs" />
+    <Compile Include="ScatterGather\ScatterGatherProducer.cs" />
     <Compile Include="Worker\Producer.cs" />
     <Compile Include="PubSub\ProducerWithExchange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
