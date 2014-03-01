@@ -30,6 +30,9 @@ http://www.eaipatterns.com/BroadcastAggregate.html
 
 Implementation in this project has only 1 work queue, but Producer could send messages through Exchange.
 
+http://geekswithblogs.net/michaelstephenson/archive/2012/08/06/150373.aspx
+
 ----------------------
 
 xml files are Draw.io diagrams
+https://www.draw.io/
