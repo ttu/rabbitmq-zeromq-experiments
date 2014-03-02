@@ -9,10 +9,45 @@ namespace Broker
     {
         public static void Main()
         {
-            var tasksToSend = new List<CommonRequest>();
+            Console.WriteLine("[*] Running the Broker. To exit press CTRL+C");
+
+            SingleBroker();
+            //PullRepBroker();
+
+            Console.WriteLine("All tasks finished!");
+            Console.ReadLine();
+        }
+
+        private static void SingleBroker()
+        {
             var responsesToClient = new List<CommonReply>();
 
-            Console.WriteLine("[*] Running the Broker. To exit press CTRL+C");
+            var processClientRequest = new Func<CommonRequest, bool>(r =>
+            {
+                Console.WriteLine("[x] Received request {0} from {1} ", r.RequestId, r.ClientId.ToString().Substring(30));
+                return true;
+            });
+
+            var processWorkerResponse = new Func<CommonReply, bool>(r =>
+            {
+                Console.WriteLine("[x] Received reply {0} to {1} ", r.ReplyId, r.ClientId.ToString().Substring(30));
+                // TODO: Send response to client
+                return true;
+            });
+
+            var brokerTask = Task.Factory.StartNew(() =>
+            {
+                var broker = new PullRepBroker<CommonRequest, CommonReply>("tcp://127.0.0.1:5001", "tcp://127.0.0.1:5000", processClientRequest, processWorkerResponse);
+                broker.Start();
+            });
+
+            Task.WaitAll(brokerTask);
+        }
+
+        private static void PullRepBroker()
+        {
+            var tasksToSend = new List<CommonRequest>();
+            var responsesToClient = new List<CommonReply>();
 
             Pull<CommonRequest> pull = null;
             REP<CommonRequest, CommonReply> rep = null;
@@ -51,9 +86,6 @@ namespace Broker
                 });
 
             Task.WaitAll(fromClientTask, toWorkerTask);
-
-            Console.WriteLine("All tasks finished!");
-            Console.ReadLine();
         }
     }
 }
