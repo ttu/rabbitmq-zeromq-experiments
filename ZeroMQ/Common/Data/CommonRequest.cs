@@ -9,6 +9,8 @@ namespace Common
 
         public int RequestId { get; set; }
 
+        public string Topic { get; set; }
+
         public string Message { get; set; }
 
         public int Duration { get; set; }

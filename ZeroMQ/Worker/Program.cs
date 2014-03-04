@@ -8,6 +8,28 @@ namespace Worker
     {
         public static void Main()
         {
+            Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
+
+            SubWorker();
+            //ReqWorker();
+
+            Console.ReadLine();
+        }
+
+        private static void SubWorker()
+        {
+            var workMethod = new Func<CommonRequest, bool>(r =>
+            {
+                Console.WriteLine("[*] Received from {0} request: {1}", r.ClientId.ToString().Substring(30), r.RequestId);
+                return true;
+            });
+
+            var sub = new Sub<CommonRequest>("tcp://127.0.0.1:5020", "ACDC",  workMethod);
+            sub.Start();
+        }
+
+        private static void ReqWorker()
+        {
             var workMethod = new Func<CommonRequest, CommonReply>(r =>
             {
                 Console.WriteLine("[*] Received from {0} request: {1}", r.ClientId.ToString().Substring(30), r.RequestId);
@@ -17,14 +39,8 @@ namespace Worker
                 return reply;
             });
 
-            Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
-
             var req = new REQ<CommonRequest, CommonReply>("tcp://127.0.0.1:5000", workMethod);
             req.Start(new CommonReply() { Success = true });
-
-            // Now all will receive
-            //var consumer = new ConsumerWithExchange();
-            //consumer.Start(workMethod);
         }
     }
 }

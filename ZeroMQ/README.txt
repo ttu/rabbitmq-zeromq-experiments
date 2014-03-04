@@ -2,7 +2,7 @@ No installation required. Uses clrzmq library.
 
 ----------------------
 
-Bind allows peers to connect.
+Bind allows peers to connect. Connect connects to binded peer.
 
 PUSH/DEALER will rotate messages out
 PUB does multicast
@@ -10,9 +10,27 @@ SUB/PULL/DEALER rotates messages in
 ROUTER rotates in, and uses addressed output
 PAIR always sends to its unique peer, if any
 
+PUSH & PUB difference:
+PUB sends same message to all subscribers. PUSH round-robins messages to PULLers.
+
 Good introduction:
 http://www.coastrd.com/zeromq-messaging
 
+Patterns:
+
+PUSH/PULL
+ - a pipelining mechanism
+PUB/SUB
+ - a data distribution pattern
+REQ/REP
+ - a RPC and task dirstibution 
+DEALER/REP
+DEALER/ROUTER
+REOUTER/ROUTER
+ROUTER/REQ(?)
+PAIR/PAIR
+ - 2 exclusive sockets
+ 
 ----------------------
 
 This example has following:
@@ -47,3 +65,5 @@ https://github.com/zeromq/clrzmq
 
 Netmq is native C# implementation of ZeroMQ
 https://github.com/zeromq/netmq
+
+http://www.codeproject.com/Articles/514959/ZeroMQ-via-Csharp-Multi-part-messages-JSON-and-Syn

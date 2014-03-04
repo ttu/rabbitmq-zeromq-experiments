@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Pub.cs" />
+    <Compile Include="Helpers\RunBase.cs" />
     <Compile Include="PullRepBroker.cs" />
     <Compile Include="Data\CommonReply.cs" />
     <Compile Include="Data\CommonRequest.cs" />
@@ -53,6 +55,7 @@
     <Compile Include="Push.cs" />
     <Compile Include="REP.cs" />
     <Compile Include="REQ.cs" />
+    <Compile Include="Sub.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
