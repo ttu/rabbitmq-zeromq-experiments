@@ -1,4 +1,4 @@
-No installation required. Uses clrzmq library.
+No installation required. Uses clrzmq or NetMQ library.
 
 ----------------------
 

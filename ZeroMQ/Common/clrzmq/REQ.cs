@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ZeroMQ;
 
-namespace Common
+namespace Common.clrzmq
 {
     // Request
     public class REQ<T, U>

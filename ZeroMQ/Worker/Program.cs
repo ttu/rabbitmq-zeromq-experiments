@@ -10,13 +10,13 @@ namespace Worker
         {
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            SubWorker();
+            SubWorker(true);
             //ReqWorker();
 
             Console.ReadLine();
         }
 
-        private static void SubWorker()
+        private static void SubWorker(bool useNetMQ)
         {
             var workMethod = new Func<CommonRequest, bool>(r =>
             {
@@ -24,8 +24,16 @@ namespace Worker
                 return true;
             });
 
-            var sub = new Sub<CommonRequest>("tcp://127.0.0.1:5020", "ACDC",  workMethod);
-            sub.Start();
+            if (useNetMQ)
+            {
+                var sub = new Common.NetMQ.Sub<CommonRequest>("tcp://127.0.0.1:5020", string.Empty, workMethod);
+                sub.Start();
+            }
+            else
+            {
+                var sub = new Common.clrzmq.Sub<CommonRequest>("tcp://127.0.0.1:5020", "ACDC", workMethod);
+                sub.Start();
+            }
         }
 
         private static void ReqWorker()
@@ -39,7 +47,7 @@ namespace Worker
                 return reply;
             });
 
-            var req = new REQ<CommonRequest, CommonReply>("tcp://127.0.0.1:5000", workMethod);
+            var req = new Common.clrzmq.REQ<CommonRequest, CommonReply>("tcp://127.0.0.1:5000", workMethod);
             req.Start(new CommonReply() { Success = true });
         }
     }

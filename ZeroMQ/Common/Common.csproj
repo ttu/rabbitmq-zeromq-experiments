@@ -35,6 +35,9 @@
     <Reference Include="clrzmq">
       <HintPath>..\packages\clrzmq.3.0.0-rc1\lib\net40\clrzmq.dll</HintPath>
     </Reference>
+    <Reference Include="NetMQ">
+      <HintPath>..\packages\NetMQ.3.3.0.8\lib\net40\NetMQ.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,18 +47,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Pub.cs" />
+    <Compile Include="clrzmq\Pub.cs" />
     <Compile Include="Helpers\RunBase.cs" />
-    <Compile Include="PullRepBroker.cs" />
+    <Compile Include="clrzmq\PullRepBroker.cs" />
     <Compile Include="Data\CommonReply.cs" />
     <Compile Include="Data\CommonRequest.cs" />
+    <Compile Include="IPub.cs" />
+    <Compile Include="NetMQ\Pub.cs" />
+    <Compile Include="NetMQ\Sub.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\SerializationMethods.cs" />
-    <Compile Include="Pull.cs" />
-    <Compile Include="Push.cs" />
-    <Compile Include="REP.cs" />
-    <Compile Include="REQ.cs" />
-    <Compile Include="Sub.cs" />
+    <Compile Include="clrzmq\Pull.cs" />
+    <Compile Include="clrzmq\Push.cs" />
+    <Compile Include="clrzmq\REP.cs" />
+    <Compile Include="clrzmq\REQ.cs" />
+    <Compile Include="clrzmq\Sub.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

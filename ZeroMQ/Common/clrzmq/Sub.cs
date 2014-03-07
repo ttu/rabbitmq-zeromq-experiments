@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using ZeroMQ;
 
-namespace Common
+namespace Common.clrzmq
 {
     public class Sub<TRequest> : RunBase
     {

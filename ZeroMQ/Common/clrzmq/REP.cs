@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using ZeroMQ;
 
-namespace Common
+namespace Common.clrzmq
 {
     // Reply
     public class REP<TRequest, TResponse>

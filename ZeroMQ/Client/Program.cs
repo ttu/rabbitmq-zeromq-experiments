@@ -10,14 +10,14 @@ namespace Client
     {
         public static void Main(string[] args)
         {
-            PubClient();
+            PubClient(true);
             //PushClient();
 
             Console.WriteLine("Press any key to quit");
             Console.ReadLine();
         }
 
-        private static void PubClient()
+        private static void PubClient(bool useNetMQ)
         {
             int msgCount = 10;
             Guid clientId = Guid.NewGuid();
@@ -39,8 +39,18 @@ namespace Client
 
             Console.WriteLine("Client {0}", clientId.ToString().Substring(30));
 
-            var push = new Pub<CommonRequest>("tcp://127.0.0.1:5020");
-            push.Start();
+            IPub<CommonRequest> pub = null;
+
+            if (useNetMQ)
+            {
+                pub = new Common.NetMQ.Pub<CommonRequest>("tcp://127.0.0.1:5020");
+            }
+            else
+            {
+                pub = new Common.clrzmq.Pub<CommonRequest>("tcp://127.0.0.1:5020");
+            }
+
+            pub.Start();
 
             var senderTask = Task.Factory.StartNew(() =>
               {
@@ -49,7 +59,7 @@ namespace Client
                       Thread.Sleep(2000);
                       var msg = messagesToSend.Dequeue();
                       Console.WriteLine("Sending {0}", msg.RequestId.ToString());
-                      push.AddMessage(msg);
+                      pub.AddMessage(msg);
                   }
               });
 
@@ -85,7 +95,7 @@ namespace Client
 
             var senderTask = Task.Factory.StartNew(() =>
             {
-                var push = new Push<CommonRequest>("tcp://127.0.0.1:5001");
+                var push = new Common.clrzmq.Push<CommonRequest>("tcp://127.0.0.1:5001");
 
                 var fillTask = Task.Factory.StartNew(() =>
                 {

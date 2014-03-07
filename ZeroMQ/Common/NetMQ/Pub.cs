@@ -1,15 +1,15 @@
-﻿using System;
+﻿using NetMQ;
+using System;
 using System.Collections.Concurrent;
 using System.Text;
-using ZeroMQ;
 
-namespace Common
+namespace Common.NetMQ
 {
-    public class Pub<TRequest> : RunBase 
+    public class Pub<TRequest> : RunBase, IPub<TRequest>
         where TRequest : CommonRequest
     {
-        private ZmqContext _zmqContext;
-        private ZmqSocket _zmqSocket;
+        private NetMQContext _zmqContext;
+        private NetMQSocket _zmqSocket;
 
         private BlockingCollection<TRequest> _requests = new BlockingCollection<TRequest>();
 
@@ -22,8 +22,8 @@ namespace Common
 
         protected override void StartMethod()
         {
-            _zmqContext = ZmqContext.Create();
-            _zmqSocket = _zmqContext.CreateSocket(SocketType.PUB);
+            _zmqContext = NetMQContext.Create();
+            _zmqSocket = _zmqContext.CreatePublisherSocket();
             _zmqSocket.Bind(_endPoint);
         }
 
@@ -35,12 +35,12 @@ namespace Common
         {
             try
             {
-                 TRequest request = _requests.Take(Token);
+                TRequest request = _requests.Take(Token);
 
-                var envelope = new Frame(Encoding.UTF8.GetBytes(request.Topic));
-                var body = new Frame(request.ToByteArray());
+                var envelope = new NetMQFrame(Encoding.UTF8.GetBytes(request.Topic));
+                var body = new NetMQFrame(request.ToByteArray());
 
-                ZmqMessage msq = new ZmqMessage();
+                var msq = new NetMQMessage();
                 msq.Append(envelope);
                 msq.Append(body);
 
