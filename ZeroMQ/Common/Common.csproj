@@ -54,6 +54,7 @@
     <Compile Include="Data\CommonRequest.cs" />
     <Compile Include="IPub.cs" />
     <Compile Include="NetMQ\Pub.cs" />
+    <Compile Include="NetMQ\SubWithPoller.cs" />
     <Compile Include="NetMQ\Sub.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\SerializationMethods.cs" />

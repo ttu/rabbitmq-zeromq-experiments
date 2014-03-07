@@ -31,9 +31,7 @@ namespace Common.NetMQ
             _zmqSocket = _zmqContext.CreateSubscriberSocket();
 
             if (string.IsNullOrEmpty(_subsPrefix))
-            {
                 _zmqSocket.Subscribe(string.Empty);
-            }
             else
                 _zmqSocket.Subscribe(Encoding.UTF8.GetBytes(_subsPrefix));
 

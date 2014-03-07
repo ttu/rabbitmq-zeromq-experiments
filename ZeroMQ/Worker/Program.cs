@@ -26,8 +26,11 @@ namespace Worker
 
             if (useNetMQ)
             {
-                var sub = new Common.NetMQ.Sub<CommonRequest>("tcp://127.0.0.1:5020", string.Empty, workMethod);
+                var sub = new Common.NetMQ.SubWithPoller<CommonRequest>("tcp://127.0.0.1:5020", string.Empty, workMethod);
                 sub.Start();
+
+                Thread.Sleep(8000);
+                sub.Stop();
             }
             else
             {
