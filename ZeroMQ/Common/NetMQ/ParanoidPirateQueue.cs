@@ -1,55 +1,21 @@
 ﻿using NetMQ;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Common.NetMQ
 {
     public static class Paranoid
     {
-        public const int HEARTBEAT_LIVENESS = 3; //3-5 is reasonable
-        public const int HEARTBEAT_INTERVAL = 1000; //msecs
+        public const int HEARTBEAT_LIVENESS = 3; // 3-5 is reasonable
+        public const int HEARTBEAT_INTERVAL_MS = 3000;
 
         public const string PPP_READY = "READY";
         public const string PPP_HEARTBEAT = "HEARTBEAT";
-    }
-
-    public class Worker
-    {
-        private byte[] _address;
-        private DateTime _expiry;
-
-        public Worker(byte[] address)
-        {
-            _address = address;
-            _expiry = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL * Paranoid.HEARTBEAT_LIVENESS);
-        }
-
-        public byte[] Address { get { return _address; } }
-
-        public void ResetExpiry()
-        {
-            _expiry = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL * Paranoid.HEARTBEAT_LIVENESS); ;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() != typeof(Worker))
-            {
-                return false;
-            }
-            else
-            {
-                return _address.SequenceEqual((obj as Worker).Address);
-            }
-        }
-
-        public override int GetHashCode()
-        {
-            return _address.GetHashCode();
-        }
     }
 
     public class ParanoidPirateQueue
@@ -59,14 +25,17 @@ namespace Common.NetMQ
         private NetMQSocket _backend;
 
         private Poller _poller;
-        private NetMQScheduler _scheduler;
+        //private NetMQScheduler _scheduler;
 
-        private List<Worker> _workerQueue;
-        private DateTime _heartbeatAt;
+        private List<WorkerInfo> _workerQueue;
+        private DateTime _nextHeartbeatAt;
+
+        private BlockingCollection<NetMQMessage> _requests = new BlockingCollection<NetMQMessage>();
+        private CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
         public ParanoidPirateQueue()
         {
-            _workerQueue = new List<Worker>();
+            _workerQueue = new List<WorkerInfo>();
         }
 
         public void Start()
@@ -81,7 +50,7 @@ namespace Common.NetMQ
             _frontend.ReceiveReady += _frontEnd_ReceiveReady;
             _backend.ReceiveReady += _backEnd_ReceiveReady;
 
-            var heartbeatTimer = new NetMQTimer(Paranoid.HEARTBEAT_INTERVAL);
+            var heartbeatTimer = new NetMQTimer(Paranoid.HEARTBEAT_INTERVAL_MS);
             heartbeatTimer.Elapsed += heartbeatTimer_Elapsed;
 
             _poller = new Poller();
@@ -89,11 +58,12 @@ namespace Common.NetMQ
             _poller.AddSocket(_backend);
             _poller.AddTimer(heartbeatTimer);
 
-            _scheduler = new NetMQScheduler(_context, _poller);
+            //_scheduler = new NetMQScheduler(_context, _poller);
 
-            _heartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL);
+            _nextHeartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS);
 
-            Task.Factory.StartNew(() => Run(), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(t => Run(t), _tokenSource.Token, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(_poller.Start, TaskCreationOptions.LongRunning);
         }
 
         public void Stop()
@@ -101,15 +71,30 @@ namespace Common.NetMQ
             _poller.Stop();
         }
 
-        private void Run()
+        private void Run(object t)
         {
-            _poller.Start();
+            var token = (CancellationToken)t;
+
+            while (token.IsCancellationRequested == false)
+            {
+                while (_workerQueue.Count == 0)
+                    Thread.Sleep(100);
+
+                var message = _requests.Take(token);
+
+                var worker = _workerQueue[0];
+                _workerQueue.RemoveAt(0);
+
+                message.Push(new NetMQFrame(worker.Address));
+
+                _backend.SendMessage(message);
+            }
         }
 
         private void heartbeatTimer_Elapsed(object sender, NetMQTimerEventArgs e)
         {
-            //Send heartbeats to idle workers if it's time
-            if (DateTime.Now >= _heartbeatAt)
+            // Send heartbeats to idle workers if it's time
+            if (DateTime.Now >= _nextHeartbeatAt)
             {
                 foreach (var worker in _workerQueue)
                 {
@@ -120,38 +105,35 @@ namespace Common.NetMQ
                     _backend.SendMessage(heartbeatMessage);
                 }
 
-                _heartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL);
+                _nextHeartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS);
             }
         }
 
         private void _frontEnd_ReceiveReady(object sender, NetMQSocketEventArgs e)
         {
-            //  Now get next client request, route to next worker
-            //  Dequeue and drop the next worker address
+            // Now get next client request, route to next worker
+            // Dequeue and drop the next worker address
             var message = e.Socket.ReceiveMessage();
 
-            var worker = _workerQueue[0];
-            message.Push(new NetMQFrame(worker.Address));
+            _requests.Add(message);
 
-            _workerQueue.RemoveAt(0);
-
-            _backend.SendMessage(message);
+            // TODO: Add messages to queue
         }
 
         private void _backEnd_ReceiveReady(object sender, NetMQSocketEventArgs e)
         {
             var message = e.Socket.ReceiveMessage();
 
-            // TODO: What is message[0]?
+            var workerIdentity = message.Pop().Buffer; // After this Client address is again on top
 
-            byte[] identity = message[1].Buffer;
+            var content = Encoding.Unicode.GetString(message[0].Buffer);
 
-            //Any sign of life from worker means it's ready, Only add it to the queue if it's not in there already
-            Worker worker = null;
+            // Any sign of life from worker means it's ready, Only add it to the queue if it's not in there already
+            WorkerInfo worker = null;
 
             if (_workerQueue.Count > 0)
             {
-                var workers = _workerQueue.Where(x => x.Address.SequenceEqual(identity));
+                var workers = _workerQueue.Where(x => x.Address.SequenceEqual(workerIdentity));
 
                 if (workers.Any())
                     worker = workers.Single();
@@ -159,25 +141,25 @@ namespace Common.NetMQ
 
             if (worker == null)
             {
-                _workerQueue.Add(new Worker(identity));
+                _workerQueue.Add(new WorkerInfo(workerIdentity));
             }
 
-            //Return reply to client if it's not a control message
-            switch (Encoding.Unicode.GetString(message[2].Buffer))
+            // Return reply to client if it's not a control message
+            switch (content)
             {
                 case Paranoid.PPP_READY:
-                    Console.WriteLine("Worker " + Encoding.Unicode.GetString(identity) + " is ready…");
+                    Console.WriteLine(DateTime.Now.ToLongTimeString() + " - Worker " + Encoding.Unicode.GetString(workerIdentity) + " is ready");
                     break;
 
-                case Paranoid.PPP_HEARTBEAT: //Worker Refresh
+                case Paranoid.PPP_HEARTBEAT:
                     if (worker != null)
                     {
                         worker.ResetExpiry();
-                        Console.WriteLine("Worker " + Encoding.Unicode.GetString(identity) + " refresh");
+                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - Worker " + Encoding.Unicode.GetString(workerIdentity) + " refresh");
                     }
                     else
                     {
-                        Console.WriteLine("E: worker " + Encoding.Unicode.GetString(identity) + " not ready…");
+                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - E: worker " + Encoding.Unicode.GetString(workerIdentity) + " not read");
                     }
                     break;
 
@@ -185,6 +167,42 @@ namespace Common.NetMQ
                     _frontend.SendMessage(message);
                     break;
             };
+        }
+
+        private class WorkerInfo
+        {
+            private byte[] _address;
+            private DateTime _expiry;
+
+            public WorkerInfo(byte[] address)
+            {
+                _address = address;
+                _expiry = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS * Paranoid.HEARTBEAT_LIVENESS);
+            }
+
+            public byte[] Address { get { return _address; } }
+
+            public void ResetExpiry()
+            {
+                _expiry = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS * Paranoid.HEARTBEAT_LIVENESS); ;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj.GetType() != typeof(WorkerInfo))
+                {
+                    return false;
+                }
+                else
+                {
+                    return _address.SequenceEqual((obj as WorkerInfo).Address);
+                }
+            }
+
+            public override int GetHashCode()
+            {
+                return _address.GetHashCode();
+            }
         }
     }
 }

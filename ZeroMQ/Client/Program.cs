@@ -10,11 +10,19 @@ namespace Client
     {
         public static void Main(string[] args)
         {
-            PubClient(true);
+            ParanoidClient();
+            //PubClient(true);
             //PushClient();
 
             Console.WriteLine("Press any key to quit");
             Console.ReadLine();
+        }
+
+        public static void ParanoidClient()
+        {
+            var client = new Common.NetMQ.ParanoidPirateClient();
+            client.Start();
+            client.Send();
         }
 
         private static void PubClient(bool useNetMQ)
