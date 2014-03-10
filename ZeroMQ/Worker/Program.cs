@@ -10,10 +10,17 @@ namespace Worker
         {
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            SubWorker(true);
+            ParanoidWorker();
+            //SubWorker(true);
             //ReqWorker();
 
             Console.ReadLine();
+        }
+
+        private static void ParanoidWorker()
+        {
+            var sub = new Common.NetMQ.ParanoidPirateWorker();
+            sub.Start();
         }
 
         private static void SubWorker(bool useNetMQ)

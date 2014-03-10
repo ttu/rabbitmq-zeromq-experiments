@@ -12,11 +12,23 @@ namespace Broker
         {
             Console.WriteLine("[*] Running the Broker. To exit press CTRL+C");
 
-            SingleBroker();
+            ParanoidBroker();
+            //SingleBroker();
             //PullRepBroker();
 
-            Console.WriteLine("All tasks finished!");
+            //Console.WriteLine("All tasks finished!");
             Console.ReadLine();
+        }
+
+        public static void ParanoidBroker()
+        {
+            var brokerTask = Task.Factory.StartNew(() =>
+            {
+                var broker = new Common.NetMQ.ParanoidPirateQueue();
+                broker.Start();
+            });
+
+            Task.WaitAll(brokerTask);
         }
 
         private static void SingleBroker()

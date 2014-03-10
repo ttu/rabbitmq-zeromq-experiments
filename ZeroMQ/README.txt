@@ -2,6 +2,9 @@ No installation required. Uses clrzmq or NetMQ library.
 
 ----------------------
 
+Good introduction:
+http://www.coastrd.com/zeromq-messaging
+
 Bind allows peers to connect. Connect connects to binded peer.
 
 PUSH/DEALER will rotate messages out
@@ -12,9 +15,6 @@ PAIR always sends to its unique peer, if any
 
 PUSH & PUB difference:
 PUB sends same message to all subscribers. PUSH round-robins messages to PULLers.
-
-Good introduction:
-http://www.coastrd.com/zeromq-messaging
 
 Patterns:
 
@@ -31,6 +31,26 @@ ROUTER/REQ(?)
 PAIR/PAIR
  - 2 exclusive sockets
  
+ Devices:
+
+ QUEUE
+  - request/response pattern
+ FORWAREDER
+  - pub/sub patter
+ STREAMER
+  - pipelining pattern
+
+  Endpoints:
+
+  INPROC
+   - In-Process 
+  IPC
+   - Inter-Process
+  MULTICAST
+   - Multicast via PGM
+  TCP
+   - Network based transport
+
 ----------------------
 
 This example has following:

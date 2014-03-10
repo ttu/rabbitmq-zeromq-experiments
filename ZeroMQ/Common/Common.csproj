@@ -53,6 +53,8 @@
     <Compile Include="Data\CommonReply.cs" />
     <Compile Include="Data\CommonRequest.cs" />
     <Compile Include="IPub.cs" />
+    <Compile Include="NetMQ\ParanoidPirateQueue.cs" />
+    <Compile Include="NetMQ\ParanoidPirateWorker.cs" />
     <Compile Include="NetMQ\Pub.cs" />
     <Compile Include="NetMQ\SubWithPoller.cs" />
     <Compile Include="NetMQ\Sub.cs" />
