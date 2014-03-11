@@ -1,6 +1,7 @@
 ﻿using Common;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,8 +11,10 @@ namespace Client
     {
         public static void Main(string[] args)
         {
-            //Normal();
-            ScatterGather();
+            if (args[0] == "s")
+                ScatterGather(args.Skip(1).ToArray());
+            else
+                Normal();
         }
 
         private static void Normal()
@@ -82,9 +85,11 @@ namespace Client
             Console.ReadLine();
         }
 
-        private static void ScatterGather()
+        private static void ScatterGather(string[] args)
         {
-            int msgCount = 10;
+            int msgCount = System.Convert.ToInt32(args[0]);
+            int sleepTimeBetweenSends = System.Convert.ToInt32(args[1]);
+
             Guid clientId = Guid.NewGuid();
 
             var messagesToSend = new List<CommonRequest>();
@@ -92,12 +97,14 @@ namespace Client
 
             for (int i = 0; i < msgCount; i++)
             {
+                var rand = new Random();
+
                 messagesToSend.Add(new CommonRequest
                 {
                     ClientId = clientId,
                     RequestId = i,
                     Message = "Hello: " + i,
-                    Duration = 5000
+                    Duration = rand.Next(10) * 1000
                 });
             }
 
@@ -115,16 +122,16 @@ namespace Client
                 return true;
             });
 
-            var scatte = new ScatterGatherProducer<CommonRequest, CommonReply>(func);
-            scatte.Start();
+            var scatter = new ScatterGatherProducer<CommonRequest, CommonReply>(func);
+            scatter.Start();
 
             var senderTask = Task.Factory.StartNew(() =>
             {
                 foreach (var msg in messagesToSend)
                 {
-                    scatte.Send(msg);
+                    scatter.Send(msg);
                     Console.WriteLine("[x] Sent {0}", msg.RequestId);
-                    Thread.Sleep(2000);
+                    Thread.Sleep(sleepTimeBetweenSends);
                 }
 
                 Console.WriteLine("Sent all");

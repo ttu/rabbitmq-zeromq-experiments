@@ -1,12 +1,41 @@
 ﻿using Common;
 using System;
+using System.Linq;
 using System.Threading;
 
 namespace Worker
 {
     internal class Program
     {
-        public static void Main()
+        public static void Main(string[] args)
+        {
+            if (args[0] == "s")
+                Scatter(args.Skip(1).ToArray());
+            else
+                PubSub(args.Skip(1).ToArray());
+        }
+
+        private static void Scatter(string[] args)
+        {
+            var scatterWorkMethod = new Func<CommonRequest, CommonReply>(r =>
+            {
+                var message = r.Message;
+                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToString().Substring(30), r.RequestId, DateTime.Now.ToLongTimeString());
+
+                Console.WriteLine("[x] Working {0}ms", r.Duration);
+                Thread.Sleep(r.Duration);
+
+                Console.WriteLine("[x] Done");
+
+                return new CommonReply { ClientId = r.ClientId, ReplyId = r.RequestId, Success = true };
+            });
+
+            // Consumer with ScatterGather
+            var consumer = new ScatterGatherConsumer<CommonRequest, CommonReply>(scatterWorkMethod);
+            consumer.Start();
+        }
+
+        private static void PubSub(string[] args)
         {
             var workMethod = new Func<CommonRequest, bool>(r =>
             {
@@ -34,23 +63,6 @@ namespace Worker
             // Now all will receive
             //var consumer = new ConsumerWithExchange();
             //consumer.Start(workMethod);
-
-            var scatterWorkMethod = new Func<CommonRequest, CommonReply>(r =>
-            {
-                var message = r.Message;
-                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToString().Substring(30), r.RequestId, DateTime.Now.ToLongTimeString());
-
-                Console.WriteLine("[x] Working {0}ms", r.Duration);
-                Thread.Sleep(r.Duration);
-
-                Console.WriteLine("[x] Done");
-
-                return new CommonReply { ClientId = r.ClientId, ReplyId = r.RequestId, Success = true };
-            });
-
-            // Consumer with ScatterGather
-            var consumer = new ScatterGatherConsumer<CommonRequest, CommonReply>(scatterWorkMethod);
-            consumer.Start();
         }
     }
 }

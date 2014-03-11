@@ -4,7 +4,9 @@ https://www.rabbitmq.com/install-windows.html
 
 Enable management plugin:
 
+e.g.
 cd C:\Program Files\RabbitMQ Server\rabbitmq_server-2.7.0\sbin
+cd C:\Program Files (x86)\RabbitMQ Server\rabbitmq_server-3.2.4\sbin
 
 rabbitmq-plugins.bat enable rabbitmq_management
 
@@ -13,7 +15,11 @@ rabbitmq-service remove
 rabbitmq-service install
 rabbitmq-service start
 
-Manager default url: http://localhost:55672/#/
+Manager default url (prior 3.0)
+http://localhost:55672/#/
+After 3.0
+http://localhost:15672
+
 username: guest
 password: guest
 
