@@ -26,8 +26,9 @@ REQ/REP
  - a RPC and task dirstibution 
 DEALER/REP
 DEALER/ROUTER
-REOUTER/ROUTER
-ROUTER/REQ(?)
+ROUTER/ROUTER
+ROUTER/REQ
+ - Router uses socket identifier to identify the sender
 PAIR/PAIR
  - 2 exclusive sockets
  

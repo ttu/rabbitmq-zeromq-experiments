@@ -32,6 +32,8 @@ namespace Common.NetMQ
             _context = NetMQContext.Create();
             _worker = _context.CreateDealerSocket();
             _worker.Options.Identity = Encoding.Unicode.GetBytes(Guid.NewGuid().ToString());
+
+            Console.WriteLine("Worker: " + Encoding.Unicode.GetString(_worker.Options.Identity));
         }
 
         public void Start()
@@ -143,15 +145,19 @@ namespace Common.NetMQ
                 case Paranoid.PPP_HEARTBEAT:
                     _interval = INTERVAL_INIT;
                     _liveness = Paranoid.HEARTBEAT_LIVENESS;
-                    Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: heartbeat received");
-
+                    //Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: heartbeat received");
                     break;
 
                 default:
                     if (message.FrameCount > 1)
                     {
-                        var text = Encoding.Unicode.GetString(message[2].Buffer);
+                        // NOTE: Rep has message payload in [2], Dealer in [1]
+                        var text = Encoding.Unicode.GetString(message[1].Buffer);
+                        // var text = Encoding.Unicode.GetString(message[2].Buffer);
+                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: from " + content);
                         Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: " + text);
+
+                        break;
 
                         if (!doTheWork(_cylces++))
                             break;
@@ -192,11 +198,11 @@ namespace Common.NetMQ
             else if (cycle > 3 && rand.Next(6) == 0)
             {
                 Console.WriteLine(DateTime.Now.ToLongTimeString() + " - I: simulating a CPU overload");
-                Thread.Sleep(3000);
+                Thread.Sleep(10000);
             }
 
             // Do some work
-            Thread.Sleep(300);
+            Thread.Sleep(3000);
 
             return true;
         }

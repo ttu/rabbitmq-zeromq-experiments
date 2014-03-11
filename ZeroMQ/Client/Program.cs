@@ -22,7 +22,14 @@ namespace Client
         {
             var client = new Common.NetMQ.ParanoidPirateClient();
             client.Start();
-            client.Send();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var work = string.Format("Work number [{0}]", i);
+                client.Send(work);
+                Console.WriteLine("I: sent " + work);
+                Thread.Sleep(1000);
+            }
         }
 
         private static void PubClient(bool useNetMQ)

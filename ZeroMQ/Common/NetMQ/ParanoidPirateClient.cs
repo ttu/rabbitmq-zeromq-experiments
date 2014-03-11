@@ -15,14 +15,19 @@ namespace Common.NetMQ
 
         public ParanoidPirateClient()
         {
-            _endPoint = "tcp://localhost:5555";         
+            _endPoint = "tcp://localhost:5555";
         }
 
         public void Start()
         {
             _context = NetMQContext.Create();
-            _socket = _context.CreateRequestSocket();
+            // Dealer can send any number of requests and just wait for the answers
+            _socket = _context.CreateDealerSocket();
+            // REP can send only one request and wait reply for that before sending more
+            //_socket = _context.CreateRequestSocket();
             _socket.Options.Identity = Encoding.Unicode.GetBytes(Guid.NewGuid().ToString());
+
+            Console.WriteLine("Client: " + Encoding.Unicode.GetString(_socket.Options.Identity));
 
             _socket.Connect(_endPoint);
 
@@ -39,17 +44,16 @@ namespace Common.NetMQ
             _poller.Stop();
         }
 
-        public void Send()
-        { 
+        public void Send(string work)
+        {
             var message = new NetMQMessage();
-            message.Append(Encoding.Unicode.GetBytes("Do some work for me"));
+            message.Append(Encoding.Unicode.GetBytes(work));
             _socket.SendMessage(message);
         }
 
         private void Run()
         {
             _poller.Start();
-
             Console.WriteLine("Stopped!");
         }
 
