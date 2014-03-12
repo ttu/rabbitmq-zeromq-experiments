@@ -20,7 +20,7 @@ namespace Worker
             var scatterWorkMethod = new Func<CommonRequest, CommonReply>(r =>
             {
                 var message = r.Message;
-                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToString().Substring(30), r.RequestId, DateTime.Now.ToLongTimeString());
+                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToPrintable(), r.RequestId, DateTime.Now.ToLongTimeString());
 
                 Console.WriteLine("[x] Working {0}ms", r.Duration);
                 Thread.Sleep(r.Duration);
@@ -40,7 +40,7 @@ namespace Worker
             var workMethod = new Func<CommonRequest, bool>(r =>
             {
                 var message = r.Message;
-                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToString().Substring(30), r.RequestId, DateTime.Now.ToLongTimeString());
+                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToPrintable(), r.RequestId, DateTime.Now.ToLongTimeString());
 
                 Console.WriteLine("[x] Working {0}ms", r.Duration);
                 Thread.Sleep(r.Duration);

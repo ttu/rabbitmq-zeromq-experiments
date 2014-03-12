@@ -36,7 +36,7 @@ namespace Client
                 });
             }
 
-            Console.WriteLine("Client {0}", clientId.ToString().Substring(30));
+            Console.WriteLine("Client {0}", clientId.ToPrintable());
 
             var senderTask = Task.Factory.StartNew(() =>
             {
@@ -97,8 +97,9 @@ namespace Client
 
             for (int i = 0; i < msgCount; i++)
             {
-                var rand = new Random();
-
+                Thread.Sleep(1);
+                var rand = new Random((int)DateTime.Now.Ticks);
+                
                 messagesToSend.Add(new CommonRequest
                 {
                     ClientId = clientId,
@@ -108,7 +109,7 @@ namespace Client
                 });
             }
 
-            Console.WriteLine("Client {0}", clientId.ToString().Substring(30));
+            Console.WriteLine("Client {0}", clientId.ToPrintable());
 
             var func = new Func<CommonReply, bool>(r =>
             {

@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\ExtensionMethods.cs" />
     <Compile Include="PubSub\ConsumerWithExchange.cs" />
     <Compile Include="Data\CommonReply.cs" />
     <Compile Include="Data\CommonRequest.cs" />
