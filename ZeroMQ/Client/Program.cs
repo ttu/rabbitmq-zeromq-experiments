@@ -25,6 +25,7 @@ namespace Client
 
             for (int i = 0; i < 10; i++)
             {
+                var rand = new Random()
                 var work = string.Format("Work number [{0}]", i);
                 client.Send(work);
                 Console.WriteLine("I: sent " + work);

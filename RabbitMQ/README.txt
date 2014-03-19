@@ -1,3 +1,8 @@
+RabbitMQ .NET Client & API documentation:
+https://www.rabbitmq.com/releases/rabbitmq-dotnet-client/
+
+----------------------
+
 Install Erlang & RabbitMQ:
 http://www.erlang.org/download.html
 https://www.rabbitmq.com/install-windows.html
@@ -35,8 +40,9 @@ Scatter Gather:
 http://www.eaipatterns.com/BroadcastAggregate.html
 
 Implementation in this project has only 1 work queue, but Producer could send messages through Exchange.
-
 http://geekswithblogs.net/michaelstephenson/archive/2012/08/06/150373.aspx
+
+Client specific workers is an implementaion based on Scatter Gather with exchange.
 
 ----------------------
 

@@ -9,10 +9,16 @@ namespace Client
 {
     internal class Program
     {
+        // ScatterGather; 10 messages; 2000ms sleep between messages
+        // s 10 2000
+        // ClientSpecificWorkers; 10 messages; 2000ms sleep between messages; 2 clients
+        // c 10 2000 2
         public static void Main(string[] args)
         {
             if (args[0] == "s")
                 ScatterGather(args.Skip(1).ToArray());
+            else if (args[0] == "c")
+                ClientSpecificWorkers(args.Skip(1).ToArray());
             else
                 Normal();
         }
@@ -41,10 +47,10 @@ namespace Client
             var senderTask = Task.Factory.StartNew(() =>
             {
                 // Broadcast to all
-                //var producer = new ProducerWithExchange();
+                //var producer = new Common.PubSub.Producer();
 
                 // Send only to one at a time
-                var producer = new Producer<CommonRequest>();
+                var producer = new Common.SharedWorker.Producer<CommonRequest>();
 
                 foreach (var msg in messagesToSend)
                 {
@@ -59,7 +65,7 @@ namespace Client
             var receiverTask = Task.Factory.StartNew(() =>
             {
                 var qName = string.Format("{0}_queue", clientId.ToString());
-                var consumer = new Consumer<CommonReply>("localhost", qName);
+                var consumer = new Common.SharedWorker.Consumer<CommonReply>("localhost", qName);
 
                 var func = new Func<CommonReply, bool>(r =>
                 {
@@ -99,7 +105,7 @@ namespace Client
             {
                 Thread.Sleep(1);
                 var rand = new Random((int)DateTime.Now.Ticks);
-                
+
                 messagesToSend.Add(new CommonRequest
                 {
                     ClientId = clientId,
@@ -123,7 +129,7 @@ namespace Client
                 return true;
             });
 
-            var scatter = new ScatterGatherProducer<CommonRequest, CommonReply>(func);
+            var scatter = new Common.ScatterGather.Producer<CommonRequest, CommonReply>(func);
             scatter.Start();
 
             var senderTask = Task.Factory.StartNew(() =>
@@ -138,8 +144,94 @@ namespace Client
                 Console.WriteLine("Sent all");
             });
 
-            Console.WriteLine("Press any key to quit");
+            //Console.WriteLine("Press any key to quit");
             Console.ReadLine();
+        }
+
+        private static void ClientSpecificWorkers(string[] args)
+        {
+            int msgCount = System.Convert.ToInt32(args[0]);
+            int sleepTimeBetweenSends = System.Convert.ToInt32(args[1]);
+            int clientCount = System.Convert.ToInt32(args[2]);
+
+            var messagesToSend = new Dictionary<Guid, List<CommonRequest>>();
+            var receivedMessages = new Dictionary<Guid, List<int>>();
+
+            var consumerFunc = new Func<CommonRequest, CommonReply>(r =>
+            {
+                var message = r.Message;
+                var client = r.ClientId.ToPrintable();
+
+                Console.WriteLine("[C] {3} ({0}) Working {1} ({2}ms)", client, r.RequestId, r.Duration, DateTime.Now.ToLongTimeString());
+                Thread.Sleep(r.Duration);
+
+                return new CommonReply { ClientId = r.ClientId, ReplyId = r.RequestId, Success = true };
+            });
+
+            var reg = new Common.ClientSpecificWorkers.ClientRegister<CommonRequest, CommonReply>(consumerFunc);
+
+            var receivedFunc = new Func<CommonReply, bool>(r =>
+            {
+                Console.WriteLine("[P] {2} ({0}) Received {1}", r.ClientId.ToPrintable(), r.ReplyId, DateTime.Now.ToLongTimeString());
+
+                receivedMessages[r.ClientId].Add(r.ReplyId);
+
+                if (receivedMessages[r.ClientId].Count == messagesToSend[r.ClientId].Count)
+                {
+                    Console.WriteLine("[P] {1} ({0}) Received all", r.ClientId.ToPrintable(), DateTime.Now.ToLongTimeString());
+                    reg.ClientOffline(r.ClientId);
+                }
+
+                return true;
+            });
+
+            var sentFunc = new Action<CommonRequest>(message =>
+            {
+                Console.WriteLine("[P] {2} ({0}) Sent {1}", message.ClientId.ToPrintable(), message.RequestId, DateTime.Now.ToLongTimeString());
+            });
+
+            var producer = new Common.ClientSpecificWorkers.Producer<CommonRequest, CommonReply>(sentFunc, receivedFunc);
+            producer.Start();
+
+            for (int i = 0; i < clientCount; i++)
+            {
+                var clientId = Guid.NewGuid();
+                messagesToSend.Add(clientId, new List<CommonRequest>());
+                receivedMessages.Add(clientId, new List<int>());
+                reg.ClientOnline(clientId);
+
+                for (int j = 0; j < msgCount; j++)
+                {
+                    Thread.Sleep(1);
+                    var rand = new Random((int)DateTime.Now.Ticks);
+
+                    messagesToSend[clientId].Add(new CommonRequest
+                    {
+                        ClientId = clientId,
+                        RequestId = j,
+                        Message = "Hello: " + i,
+                        Duration = rand.Next(10) * 1000
+                    });
+                }
+            }
+
+            for (int i = 0; i < clientCount; i++)
+            {
+                var current = i;
+
+                var task = Task.Factory.StartNew(() =>
+                    {
+                        foreach (var msg in messagesToSend.Skip(current).First().Value)
+                        {
+                            producer.Send(msg);
+                            Thread.Sleep(sleepTimeBetweenSends);
+                        }
+                    });
+            }
+
+            Console.ReadLine();
+
+            producer.Stop();
         }
     }
 }

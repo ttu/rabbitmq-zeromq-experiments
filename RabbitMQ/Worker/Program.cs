@@ -11,8 +11,14 @@ namespace Worker
         {
             if (args[0] == "s")
                 Scatter(args.Skip(1).ToArray());
+            else if (args[0] == "c")
+                ClientSpecificWorkers(args.Skip(1).ToArray());
             else
                 PubSub(args.Skip(1).ToArray());
+        }
+
+        private static void ClientSpecificWorkers(string[] args)
+        {
         }
 
         private static void Scatter(string[] args)
@@ -31,7 +37,7 @@ namespace Worker
             });
 
             // Consumer with ScatterGather
-            var consumer = new ScatterGatherConsumer<CommonRequest, CommonReply>(scatterWorkMethod);
+            var consumer = new Common.ScatterGather.Consumer<CommonRequest, CommonReply>(scatterWorkMethod);
             consumer.Start();
         }
 
@@ -49,7 +55,7 @@ namespace Worker
 
                 var qName = string.Format("{0}_queue", r.ClientId.ToString());
 
-                var publisher = new Producer<CommonReply>("localhost", qName);
+                var publisher = new Common.SharedWorker.Producer<CommonReply>("localhost", qName);
                 publisher.Publish(new CommonReply { ClientId = r.ClientId, ReplyId = r.RequestId, Success = true });
 
                 return true;
@@ -57,11 +63,8 @@ namespace Worker
 
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            //var consumer = new Consumer<CommonRequest>();
-            //consumer.Start(workMethod);
-
             // Now all will receive
-            //var consumer = new ConsumerWithExchange();
+            //var consumer = new Common.PubSub.Consumer();
             //consumer.Start(workMethod);
         }
     }

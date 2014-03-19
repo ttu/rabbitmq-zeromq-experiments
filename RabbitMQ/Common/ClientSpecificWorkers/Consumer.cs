@@ -4,11 +4,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Common
+namespace Common.ClientSpecificWorkers
 {
-    public class ScatterGatherConsumer<TRequest, TResponse> : IDisposable
+    public class Consumer<TRequest, TResponse> : IDisposable
     {
         private string _hostName;
+        private string _exchangeName;
+        private Guid _clientId;
         private string _queueName;
 
         private ConnectionFactory _connectionFactory;
@@ -23,25 +25,31 @@ namespace Common
 
         private bool _disposed;
 
-        public ScatterGatherConsumer(Func<TRequest, TResponse> processRequest, string hostName = "localhost", string queueName = "ScatterGather_WorkQueue")
+        public Consumer(Func<TRequest, TResponse> processRequest, Guid clientId, string hostName = "localhost")
         {
             _processRequest = processRequest;
             _hostName = hostName;
-            _queueName = queueName;
+            _exchangeName = "CustomerExchange";
+            _clientId = clientId;
 
             _connectionFactory = new ConnectionFactory() { HostName = _hostName };
             _connection = _connectionFactory.CreateConnection();
             _model = _connection.CreateModel();
 
-            //_model.QueueDeclare(_queueName, false, false, false, null);
-
             // Fair dispatch
             _model.BasicQos(0, 1, false);
+
+            // If excange doesn't exist, create it
+            _model.ExchangeDeclare(_exchangeName, ExchangeType.Direct, true, false, null);
+
+            // TODO: If want to have multiple consumers for queues, this should have some defined name
+            _queueName = _model.QueueDeclare().QueueName;
+            _model.QueueBind(_queueName, _exchangeName, _clientId.ToString());
 
             _subscription = new Subscription(_model, _queueName, false);
         }
 
-        ~ScatterGatherConsumer()
+        ~Consumer()
         {
             Dispose(false);
         }
@@ -72,10 +80,13 @@ namespace Common
 
             while (token.IsCancellationRequested == false)
             {
-                var deliveryArgs = _subscription.Next();
-
                 try
                 {
+                    var deliveryArgs = _subscription.Next();
+
+                    if (deliveryArgs == null) // Connection is closed
+                        continue;
+
                     var body = SerializationMethods.FromByteArray<TRequest>(deliveryArgs.Body);
 
                     TResponse response = _processRequest(body);

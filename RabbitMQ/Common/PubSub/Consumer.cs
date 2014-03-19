@@ -2,14 +2,14 @@
 using RabbitMQ.Client.Events;
 using System;
 
-namespace Common
+namespace Common.PubSub
 {
-    public class ConsumerWithExchange
+    public class Consumer
     {
         private string _hostName;
         private string _exchangeName;
 
-        public ConsumerWithExchange(string hostName = "localhost", string exchangeName = "Test_Exch")
+        public Consumer(string hostName = "localhost", string exchangeName = "Test_Exch")
         {
             _hostName = "localhost";
             _exchangeName = exchangeName;

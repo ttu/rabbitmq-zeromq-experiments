@@ -4,14 +4,13 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Common
+namespace Common.ScatterGather
 {
-    public class ScatterGatherProducer<TRequest, TResponse> : IDisposable
+    public class Producer<TRequest, TResponse> : IDisposable
     {
         private string _hostName;
         private string _queueName;
         private string _responseQueueName;
-        private string _exchangeName = "ScatterGather_ex";
 
         private ConnectionFactory _connectionFactory;
         private IConnection _connection;
@@ -28,7 +27,7 @@ namespace Common
 
         private bool _disposed;
 
-        public ScatterGatherProducer(Func<TResponse, bool> processRequest, string hostName = "localhost", string queueName = "ScatterGather_WorkQueue")
+        public Producer(Func<TResponse, bool> processRequest, string hostName = "localhost", string queueName = "ScatterGather_WorkQueue")
         {
             _processRequest = processRequest;
             _hostName = hostName;
@@ -44,7 +43,7 @@ namespace Common
             _model.BasicConsume(_responseQueueName, true, _consumer);
         }
 
-        ~ScatterGatherProducer()
+        ~Producer()
         {
             Dispose(false);
         }

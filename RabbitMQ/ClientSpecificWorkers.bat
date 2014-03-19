@@ -1,0 +1,1 @@
+start "Client Window" cmd /T:0A /k .\Client\bin\debug\Client.exe c 10 1500 2

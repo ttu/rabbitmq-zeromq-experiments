@@ -2,7 +2,7 @@
 using RabbitMQ.Client;
 using System.Collections.Generic;
 
-namespace Common
+namespace Common.SharedWorker
 {
     public class Producer<T>
     {

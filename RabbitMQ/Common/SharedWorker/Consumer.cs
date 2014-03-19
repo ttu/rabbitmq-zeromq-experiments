@@ -2,7 +2,7 @@
 using RabbitMQ.Client.Events;
 using System;
 
-namespace Common
+namespace Common.SharedWorker
 {
     public class Consumer<T>
     {

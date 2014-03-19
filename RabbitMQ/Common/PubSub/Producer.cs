@@ -1,14 +1,14 @@
 ﻿using RabbitMQ.Client;
 using System.Collections.Generic;
 
-namespace Common
+namespace Common.PubSub
 {
-    public class ProducerWithExchange
+    public class Producer
     {
         private string _hostName;
         private string _exchangeName;
 
-        public ProducerWithExchange(string hostName = "localhost", string exchangeName = "Test_Exch")
+        public Producer(string hostName = "localhost", string exchangeName = "Test_Exch")
         {
             _hostName = "localhost";
             _exchangeName = exchangeName;
