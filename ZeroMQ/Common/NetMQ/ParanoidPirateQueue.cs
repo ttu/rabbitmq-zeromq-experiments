@@ -11,7 +11,7 @@ namespace Common.NetMQ
 {
     public static class Paranoid
     {
-        public const int HEARTBEAT_LIVENESS = 3; // 3-5 is reasonable
+        public const int HEARTBEAT_LIVENESS = 5; // 3-5 is reasonable
         public const int HEARTBEAT_INTERVAL_MS = 1000;
 
         public const string PPP_READY = "READY";
@@ -26,7 +26,6 @@ namespace Common.NetMQ
 
         private Poller _poller;
 
-        // TODO: Change to some Concurrent collection
         private List<WorkerInfo> _workerQueue;
 
         private DateTime _nextHeartbeatAt;
@@ -78,16 +77,11 @@ namespace Common.NetMQ
             {
                 var message = _requests.Take(token);
 
-                while (_workerQueue.Count == 0)
+                while (_workerQueue.Any(w => w.IsWorking == false) == false)
                     Thread.Sleep(100);
 
-                WorkerInfo worker;
-
-                lock (_workerQueue)
-                {
-                    worker = _workerQueue[0];
-                    _workerQueue.RemoveAt(0);
-                }
+                WorkerInfo worker = _workerQueue.First(w => w.IsWorking == false);
+                worker.IsWorking = true;
 
                 message.Push(new NetMQFrame(worker.Address));
 
@@ -100,26 +94,28 @@ namespace Common.NetMQ
             // Send heartbeats to idle workers if it's time
             if (DateTime.Now >= _nextHeartbeatAt)
             {
-                lock (_workerQueue)
+                var expired = _workerQueue.Where(w => w.Expiry < DateTime.Now).ToList();
+                expired.ForEach(w =>
                 {
-                    var expired = _workerQueue.Where(w => w.Expiry < DateTime.Now).ToList();
-                    expired.ForEach(w =>
-                    {
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - Worker " + Encoding.Unicode.GetString(w.Address) + " is lost");
-                        _workerQueue.Remove(w);
-                    });
+                    // TODO: Resend message if worker was working on something
+                    if (w.IsWorking)
+                        Console.WriteLine("{0} - Worker {1} is lost and still working", DateTime.Now.ToLongTimeString(), w.ShortId);
+                    else
+                        Console.WriteLine("{0} - Worker {1} is lost", DateTime.Now.ToLongTimeString(), w.ShortId);
 
-                    foreach (var worker in _workerQueue)
-                    {
-                        var heartbeatMessage = new NetMQMessage();
-                        heartbeatMessage.Append(new NetMQFrame(worker.Address));
-                        heartbeatMessage.Append(new NetMQFrame(Encoding.Unicode.GetBytes(Paranoid.PPP_HEARTBEAT)));
+                    _workerQueue.Remove(w);
+                });
 
-                        _backend.SendMessage(heartbeatMessage);
-                    }
+                foreach (var worker in _workerQueue)
+                {
+                    var heartbeatMessage = new NetMQMessage();
+                    heartbeatMessage.Append(new NetMQFrame(worker.Address));
+                    heartbeatMessage.Append(new NetMQFrame(Encoding.Unicode.GetBytes(Paranoid.PPP_HEARTBEAT)));
 
-                    _nextHeartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS);
+                    _backend.SendMessage(heartbeatMessage);
                 }
+
+                _nextHeartbeatAt = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS);
             }
         }
 
@@ -136,30 +132,20 @@ namespace Common.NetMQ
             var workerIdentity = message.Pop().Buffer; // After this Client address is again on top (if there is one)
             var content = Encoding.Unicode.GetString(message[0].Buffer);
 
-            // Any sign of life from worker means it's ready, Only add it to the queue if it's not in there already
-            WorkerInfo worker = null;
+            var worker = _workerQueue.SingleOrDefault(x => x.Address.SequenceEqual(workerIdentity));
 
-            lock (_workerQueue)
-            {
-                if (_workerQueue.Count > 0)
-                {
-                    var workers = _workerQueue.Where(x => x.Address.SequenceEqual(workerIdentity));
-
-                    if (workers.Any())
-                        worker = workers.Single();
-                }
-
-                if (worker == null)
-                {
-                    _workerQueue.Add(new WorkerInfo(workerIdentity));
-                }
-            }
-
-            // TODO: Best way to handle control messages and _workerueues?
             switch (content)
             {
                 case Paranoid.PPP_READY:
-                    Console.WriteLine(DateTime.Now.ToLongTimeString() + " - Worker " + Encoding.Unicode.GetString(workerIdentity) + " is ready");
+                    if (worker != null)
+                    {
+                        Console.WriteLine("{0} - Worker {1} already in queue", DateTime.Now.ToLongTimeString(), worker.ShortId);
+                        break;
+                    }
+
+                    worker = new WorkerInfo(workerIdentity);
+                    _workerQueue.Add(worker);
+                    Console.WriteLine("{0} - Worker {1} is ready", DateTime.Now.ToLongTimeString(), worker.ShortId);
                     break;
 
                 case Paranoid.PPP_HEARTBEAT:
@@ -170,12 +156,15 @@ namespace Common.NetMQ
                     }
                     else
                     {
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - E: worker " + Encoding.Unicode.GetString(workerIdentity) + " not read");
+                        // This might happen when worker is just taken from queue so work is assigned to it
+                        Console.WriteLine("{0} - E: worker {1}not in queue", DateTime.Now.ToLongTimeString(), worker.ShortId);
                     }
+
                     break;
 
                 // Return reply to client if it's not a control message
-                default: 
+                default:
+                    worker.IsWorking = false;
                     _frontend.SendMessage(message);
                     break;
             };
@@ -185,16 +174,22 @@ namespace Common.NetMQ
         {
             private byte[] _address;
             private DateTime _expiry;
+            private string _shortId;
 
             public WorkerInfo(byte[] address)
             {
                 _address = address;
                 _expiry = DateTime.Now.AddMilliseconds(Paranoid.HEARTBEAT_INTERVAL_MS * Paranoid.HEARTBEAT_LIVENESS);
+                _shortId = Guid.Parse(Encoding.Unicode.GetString(_address)).ToPrintable();
             }
+
+            public string ShortId { get { return _shortId; } }
 
             public byte[] Address { get { return _address; } }
 
             public DateTime Expiry { get { return _expiry; } }
+
+            public bool IsWorking { get; set; }
 
             public void ResetExpiry()
             {

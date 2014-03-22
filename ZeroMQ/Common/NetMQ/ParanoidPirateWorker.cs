@@ -33,7 +33,8 @@ namespace Common.NetMQ
             _worker = _context.CreateDealerSocket();
             _worker.Options.Identity = Encoding.Unicode.GetBytes(Guid.NewGuid().ToString());
 
-            Console.WriteLine("Worker: " + Encoding.Unicode.GetString(_worker.Options.Identity));
+            var shortId = Guid.Parse(Encoding.Unicode.GetString(_worker.Options.Identity)).ToPrintable();
+            Console.WriteLine("Worker: {0}", shortId);
         }
 
         public void Start()
@@ -100,8 +101,8 @@ namespace Common.NetMQ
             // If liveness hits zero, queue is considered disconnected
             if (--_liveness <= 0)
             {
-                Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: heartbeat failure, can't reach queue.");
-                Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: reconnecting in {0} msecs...", _interval);
+                Console.WriteLine("{0} - W: heartbeat failure, can't reach queue.", DateTime.Now.ToLongTimeString());
+                Console.WriteLine("{0} - W: reconnecting in {1} msecs...", DateTime.Now.ToLongTimeString(), _interval);
 
                 Thread.Sleep(_interval);
 
@@ -114,7 +115,7 @@ namespace Common.NetMQ
                 // Break the while loop and start the connection over
                 Task.Factory.StartNew(_ =>
                     {
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - I: restart");
+                        Console.WriteLine("{0} - I: restart", DateTime.Now.ToLongTimeString());
 
                         Stop();
                         Dispose();
@@ -154,23 +155,25 @@ namespace Common.NetMQ
                         // NOTE: Rep has message payload in [2], Dealer in [1]
                         var text = Encoding.Unicode.GetString(message[1].Buffer);
                         // var text = Encoding.Unicode.GetString(message[2].Buffer);
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: from " + content);
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: " + text);
+                        Console.WriteLine("{0} - W: from {1}", DateTime.Now.ToLongTimeString(), Guid.Parse(content).ToPrintable());
+                        Console.WriteLine("{0} - W: {1}", DateTime.Now.ToLongTimeString(), text);
 
-                        break;
-
-                        if (!doTheWork(_cylces++))
-                            break;
+                        // TODO: Implement crash handlings (now just work for 3sec)
+                        Thread.Sleep(3000);
+                        //if (!doTheWork(_cylces++))
+                        //    break;
 
                         _interval = INTERVAL_INIT;
                         _liveness = Paranoid.HEARTBEAT_LIVENESS;
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - W: work completed");
+                        Console.WriteLine("{0} - W: Completed", DateTime.Now.ToLongTimeString());
                         _worker.SendMessage(message);
                     }
                     else
                     {
-                        Console.WriteLine(DateTime.Now.ToLongTimeString() + " - E: invalid message {0}", identity);
+                        var id = Guid.Parse(Encoding.Unicode.GetString(identity)).ToPrintable();
+                        Console.WriteLine("{0} - E: invalid message {1}", DateTime.Now.ToLongTimeString(), id);
                     }
+
                     break;
             };
         }

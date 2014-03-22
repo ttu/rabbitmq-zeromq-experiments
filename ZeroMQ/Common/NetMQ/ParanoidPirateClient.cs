@@ -25,9 +25,9 @@ namespace Common.NetMQ
             _socket = _context.CreateDealerSocket();
             // REP can send only one request and wait reply for that before sending more
             //_socket = _context.CreateRequestSocket();
-            _socket.Options.Identity = Encoding.Unicode.GetBytes(Guid.NewGuid().ToString());
-
-            Console.WriteLine("Client: " + Encoding.Unicode.GetString(_socket.Options.Identity));
+            var clientId = Guid.NewGuid();
+            _socket.Options.Identity = Encoding.Unicode.GetBytes(clientId.ToString());
+            Console.WriteLine("Client: {0}", clientId.ToPrintable());
 
             _socket.Connect(_endPoint);
 
@@ -62,7 +62,7 @@ namespace Common.NetMQ
             var message = e.Socket.ReceiveMessage();
 
             var content = Encoding.Unicode.GetString(message[0].Buffer);
-            Console.WriteLine(DateTime.Now.ToLongTimeString() + " - Received: " + content);
+            Console.WriteLine("{0} - Received: {1}", DateTime.Now.ToLongTimeString(), content);
         }
     }
 }
