@@ -62,7 +62,13 @@ namespace Common.NetMQ
             var message = e.Socket.ReceiveMessage();
 
             var content = Encoding.Unicode.GetString(message[0].Buffer);
-            Console.WriteLine("{0} - Received: {1}", DateTime.Now.ToLongTimeString(), content);
+
+            if (content == "Error")
+                Console.WriteLine("{0} - I: received error on {1}", DateTime.Now.ToLongTimeString(), Encoding.Unicode.GetString(message[1].Buffer));
+            else if (content == "Resend")
+                Console.WriteLine("{0} - I: received resend on {1}", DateTime.Now.ToLongTimeString(), Encoding.Unicode.GetString(message[1].Buffer));
+            else
+                Console.WriteLine("{0} - I: received {1}", DateTime.Now.ToLongTimeString(), content);
         }
     }
 }

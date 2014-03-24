@@ -13,6 +13,7 @@ namespace Common.NetMQ
     {
         public const int HEARTBEAT_LIVENESS = 5; // 3-5 is reasonable
         public const int HEARTBEAT_INTERVAL_MS = 1000;
+        public const int HEARTBEAT_KILLTIME_MS = HEARTBEAT_INTERVAL_MS * HEARTBEAT_LIVENESS * 4;
 
         public const string PPP_READY = "READY";
         public const string PPP_HEARTBEAT = "HEARTBEAT";
@@ -30,7 +31,9 @@ namespace Common.NetMQ
 
         private DateTime _nextHeartbeatAt;
 
-        private BlockingCollection<NetMQMessage> _requests = new BlockingCollection<NetMQMessage>();
+        private BlockingCollection<RequestInfo> _requests = new BlockingCollection<RequestInfo>();
+        private List<RequestInfo> _sentRequests = new List<RequestInfo>();
+
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
         public ParanoidPirateQueue()
@@ -75,7 +78,7 @@ namespace Common.NetMQ
 
             while (token.IsCancellationRequested == false)
             {
-                var message = _requests.Take(token);
+                var request = _requests.Take(token);
 
                 while (_workerQueue.Any(w => w.IsWorking == false) == false)
                     Thread.Sleep(100);
@@ -83,9 +86,13 @@ namespace Common.NetMQ
                 WorkerInfo worker = _workerQueue.First(w => w.IsWorking == false);
                 worker.IsWorking = true;
 
-                message.Push(new NetMQFrame(worker.Address));
+                request.AssignedTo = worker;
+                request.Message.Push(new NetMQFrame(worker.Address));
 
-                _backend.SendMessage(message);
+                _backend.SendMessage(request.Message);
+
+                lock (_sentRequests)
+                    _sentRequests.Add(request);
             }
         }
 
@@ -95,16 +102,7 @@ namespace Common.NetMQ
             if (DateTime.Now >= _nextHeartbeatAt)
             {
                 var expired = _workerQueue.Where(w => w.Expiry < DateTime.Now).ToList();
-                expired.ForEach(w =>
-                {
-                    // TODO: Resend message if worker was working on something
-                    if (w.IsWorking)
-                        Console.WriteLine("{0} - Worker {1} is lost and still working", DateTime.Now.ToLongTimeString(), w.ShortId);
-                    else
-                        Console.WriteLine("{0} - Worker {1} is lost", DateTime.Now.ToLongTimeString(), w.ShortId);
-
-                    _workerQueue.Remove(w);
-                });
+                expired.ForEach(w => HandleExpiredWorker(w));
 
                 foreach (var worker in _workerQueue)
                 {
@@ -122,7 +120,21 @@ namespace Common.NetMQ
         private void _frontEnd_ReceiveReady(object sender, NetMQSocketEventArgs e)
         {
             var message = e.Socket.ReceiveMessage();
-            _requests.Add(message);
+
+            var idString = Guid.NewGuid().ToString();
+
+            // Add indentifier as last Frame
+            var newMessage = new NetMQMessage();
+            newMessage.Push(Encoding.Unicode.GetBytes(idString));
+
+            foreach (var frame in message.Reverse())
+            {
+                newMessage.Push(frame);
+            }
+
+            var request = new RequestInfo { Id = idString, Message = newMessage };
+
+            _requests.Add(request);
         }
 
         private void _backEnd_ReceiveReady(object sender, NetMQSocketEventArgs e)
@@ -157,7 +169,7 @@ namespace Common.NetMQ
                     else
                     {
                         // This might happen when worker is just taken from queue so work is assigned to it
-                        Console.WriteLine("{0} - E: worker {1}not in queue", DateTime.Now.ToLongTimeString(), worker.ShortId);
+                        Console.WriteLine("{0} - E: worker {1} not in queue", DateTime.Now.ToLongTimeString(), worker.ShortId);
                     }
 
                     break;
@@ -166,8 +178,80 @@ namespace Common.NetMQ
                 default:
                     worker.IsWorking = false;
                     _frontend.SendMessage(message);
+
+                    var id = Encoding.Unicode.GetString(message.Last().Buffer);
+
+                    lock (_sentRequests)
+                        _sentRequests.Remove(_sentRequests.Single(s => s.Id == id));
+
                     break;
             };
+        }
+
+        private void HandleExpiredWorker(WorkerInfo w)
+        {
+            // TODO: Do not send messages to frontend with every heartbeat
+
+            if (w.IsWorking)
+            {
+                // Worker might be just stuck, so send notification to client
+                var messages = _sentRequests.Where(s => s.AssignedTo == w).ToList();
+
+                // Check if it is time to announce worker dead
+                if (w.Expiry.AddMilliseconds(Paranoid.HEARTBEAT_KILLTIME_MS) < DateTime.Now)
+                {
+                    Console.WriteLine("{0} - Worker {1} is lost and messages resent", DateTime.Now.ToLongTimeString(), w.ShortId);
+
+                    _workerQueue.Remove(w);
+
+                    messages.ForEach(m =>
+                    {
+                        var errorMessage = new NetMQMessage(new List<NetMQFrame>
+                            {
+                                m.Message[1],
+                                new NetMQFrame(Encoding.Unicode.GetBytes("Resend")),
+                                m.Message[2]
+                            });
+                        _frontend.SendMessage(errorMessage);
+
+                        var id = Encoding.Unicode.GetString(m.Message.Last().Buffer);
+                        RequestInfo info;
+
+                        lock (_sentRequests)
+                        {
+                            info = _sentRequests.Single(s => s.Id == id);
+                            _sentRequests.Remove(info);
+                        }
+
+                        info.AssignedTo = null;
+                        // TODO: Should add to beginning of requests queue
+                        // Remove worker address
+                        info.Message.Pop();
+                        _requests.Add(info);
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("{0} - Worker {1} is lost and still working", DateTime.Now.ToLongTimeString(), w.ShortId);
+
+                    messages.ForEach(m =>
+                    {
+                        var errorMessage = new NetMQMessage(new List<NetMQFrame>
+                            {
+                                m.Message[1],
+                                new NetMQFrame(Encoding.Unicode.GetBytes("Error")),
+                                m.Message[2]
+                            });
+                        _frontend.SendMessage(errorMessage);
+                    });
+                }
+            }
+            else
+            {
+                Console.WriteLine("{0} - Worker {1} is lost", DateTime.Now.ToLongTimeString(), w.ShortId);
+
+                _workerQueue.Remove(w);
+            }
         }
 
         private class WorkerInfo
@@ -212,6 +296,15 @@ namespace Common.NetMQ
             {
                 return _address.GetHashCode();
             }
+        }
+
+        private class RequestInfo
+        {
+            public string Id { get; set; }
+
+            public WorkerInfo AssignedTo { get; set; }
+
+            public NetMQMessage Message { get; set; }
         }
     }
 }

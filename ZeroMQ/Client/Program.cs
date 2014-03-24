@@ -23,11 +23,11 @@ namespace Client
             var client = new Common.NetMQ.ParanoidPirateClient();
             client.Start();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 20; i++)
             {
                 var work = string.Format("Work number [{0}]", i);
                 client.Send(work);
-                Console.WriteLine("I: sent " + work);
+                Console.WriteLine("{1} - I: sent {0}", work, DateTime.Now.ToLongTimeString());
                 Thread.Sleep(1000);
             }
         }

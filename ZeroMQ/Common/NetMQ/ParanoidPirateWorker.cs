@@ -158,10 +158,11 @@ namespace Common.NetMQ
                         Console.WriteLine("{0} - W: from {1}", DateTime.Now.ToLongTimeString(), Guid.Parse(content).ToPrintable());
                         Console.WriteLine("{0} - W: {1}", DateTime.Now.ToLongTimeString(), text);
 
-                        // TODO: Implement crash handlings (now just work for 3sec)
-                        Thread.Sleep(3000);
-                        //if (!doTheWork(_cylces++))
-                        //    break;
+                        if (!DoWork(_cylces++))
+                        {
+                            Stop();
+                            break;
+                        }
 
                         _interval = INTERVAL_INIT;
                         _liveness = Paranoid.HEARTBEAT_LIVENESS;
@@ -189,22 +190,21 @@ namespace Common.NetMQ
             _worker.SendMessage(message);
         }
 
-        private bool doTheWork(int cycle)
+        private bool DoWork(int cycle)
         {
-            var rand = new Random();
+            var rand = new Random((int)DateTime.Now.Ticks);
 
-            if (cycle > 3 && rand.Next(6) == 0)
+            if (cycle > 3 && rand.Next(20) == 0)
             {
-                Console.WriteLine(DateTime.Now.ToLongTimeString() + " - I: simulating a crash");
+                Console.WriteLine("{0} - I: simulating a crash", DateTime.Now.ToLongTimeString());
                 return false;
             }
-            else if (cycle > 3 && rand.Next(6) == 0)
+            else if (cycle > 1 && rand.Next(4) == 0)
             {
-                Console.WriteLine(DateTime.Now.ToLongTimeString() + " - I: simulating a CPU overload");
-                Thread.Sleep(10000);
+                Console.WriteLine("{0} - I: simulating a CPU overload", DateTime.Now.ToLongTimeString());
+                Thread.Sleep(6000);
             }
 
-            // Do some work
             Thread.Sleep(3000);
 
             return true;
