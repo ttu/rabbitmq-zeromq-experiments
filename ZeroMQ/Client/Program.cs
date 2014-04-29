@@ -1,4 +1,5 @@
-﻿using Common;
+﻿using Client.ExampleApplication;
+using Common;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,12 +11,22 @@ namespace Client
     {
         public static void Main(string[] args)
         {
-            ParanoidClient();
+            //ParanoidClient();
+            SampleApplication();
             //PubClient(true);
             //PushClient();
 
             //Console.WriteLine("Press any key to quit");
             Console.ReadLine();
+        }
+
+        private static async Task SampleApplication()
+        {
+            var myApp = new SampleApplication(new DataServiceWrapper(), new NotificationWrapper());
+            myApp.PublishNotification("My app started");
+            await myApp.GetData();
+            await myApp.SetData();
+            await myApp.GetData();
         }
 
         public static void ParanoidClient()

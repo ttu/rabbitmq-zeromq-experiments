@@ -1,6 +1,8 @@
 ﻿using Common;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using Worker.ExampleApplication;
 
 namespace Worker
 {
@@ -10,7 +12,8 @@ namespace Worker
         {
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            ParanoidWorker();
+            //ParanoidWorker();
+            SampleApplication();
             //SubWorker(true);
             //ReqWorker();
 
@@ -59,6 +62,23 @@ namespace Worker
 
             var req = new Common.clrzmq.REQ<CommonRequest, CommonReply>("tcp://127.0.0.1:5000", workMethod);
             req.Start(new CommonReply() { Success = true });
+        }
+
+        private static void SampleApplication()
+        {
+            Console.WriteLine("Start sample application");
+
+            Task.Factory.StartNew(() =>
+            {
+                var serviceAPI = new DataServiceAPI();
+                var service = new DataService(serviceAPI);
+            });
+
+            Task.Factory.StartNew(() =>
+           {
+               var notApi = new NotificationServiceAPI();
+               var noti = new NotificationService(notApi);
+           });
         }
     }
 }

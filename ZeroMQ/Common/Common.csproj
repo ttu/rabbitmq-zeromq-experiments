@@ -48,6 +48,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="clrzmq\Pub.cs" />
+    <Compile Include="Data\ExampleApplication\DataRequest.cs" />
+    <Compile Include="Data\ExampleApplication\DataReply.cs" />
     <Compile Include="Helpers\ExtensionMethods.cs" />
     <Compile Include="Helpers\RunBase.cs" />
     <Compile Include="clrzmq\PullRepBroker.cs" />
@@ -58,6 +60,10 @@
     <Compile Include="NetMQ\ParanoidPirateWorker.cs" />
     <Compile Include="NetMQ\Pub.cs" />
     <Compile Include="NetMQ\ParanoidPirateClient.cs" />
+    <Compile Include="NetMQ\Pull.cs" />
+    <Compile Include="NetMQ\Push.cs" />
+    <Compile Include="NetMQ\REP.cs" />
+    <Compile Include="NetMQ\REQ.cs" />
     <Compile Include="NetMQ\SubWithPoller.cs" />
     <Compile Include="NetMQ\Sub.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
