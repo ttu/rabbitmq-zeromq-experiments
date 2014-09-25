@@ -20,6 +20,12 @@ rabbitmq-service remove
 rabbitmq-service install
 rabbitmq-service start
 
+OR
+
+Use Vagrant from Scratchpad
+
+----------------------
+
 Manager default url (prior 3.0)
 http://localhost:55672/#/
 After 3.0
@@ -27,6 +33,8 @@ http://localhost:15672
 
 username: guest
 password: guest
+
+----------------------
 
 Start more Clients and Workers from Visual Studio:
 Debug -> Start new instance
