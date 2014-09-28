@@ -9,12 +9,19 @@ namespace Worker
     {
         public static void Main(string[] args)
         {
-            if (args[0] == "s")
+            if (args.Count() == 0)
+            {
+                //PubSub();
+                SharedWorker();
+            }
+            else if (args[0] == "p")
+                PubSub();
+            else if (args[0] == "sw")
+                SharedWorker();
+            else if (args[0] == "s")
                 Scatter(args.Skip(1).ToArray());
             else if (args[0] == "c")
                 ClientSpecificWorkers(args.Skip(1).ToArray());
-            else
-                PubSub(args.Skip(1).ToArray());
         }
 
         private static void ClientSpecificWorkers(string[] args)
@@ -41,7 +48,7 @@ namespace Worker
             consumer.Start();
         }
 
-        private static void PubSub(string[] args)
+        private static void SharedWorker()
         {
             var workMethod = new Func<CommonRequest, bool>(r =>
             {
@@ -63,9 +70,31 @@ namespace Worker
 
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            // Now all will receive
             //var consumer = new Common.PubSub.Consumer();
-            //consumer.Start(workMethod);
+            var consumer = new Common.SharedWorker.Consumer<CommonRequest>();
+
+            consumer.Start(workMethod);
+        }
+
+        private static void PubSub()
+        {
+            var workMethod = new Func<CommonRequest, bool>(r =>
+            {
+                var message = r.Message;
+                Console.WriteLine("[{2}] Received from {0}, message {1}", r.ClientId.ToPrintable(), r.RequestId, DateTime.Now.ToLongTimeString());
+
+                Console.WriteLine("[x] Working {0}ms", r.Duration);
+                Thread.Sleep(r.Duration);
+
+                Console.WriteLine("[x] Done");
+
+                return true;
+            });
+
+            Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
+
+            var consumer = new Common.PubSub.Consumer();
+            consumer.Start(workMethod);
         }
     }
 }

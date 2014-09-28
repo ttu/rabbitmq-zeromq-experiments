@@ -8,10 +8,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		ClientSpecificWorkers.bat = ClientSpecificWorkers.bat
 		ClientSpecificWorkers.jpg = ClientSpecificWorkers.jpg
 		ClientSpecificWorkers.xml = ClientSpecificWorkers.xml
+		PubSub.bat = PubSub.bat
 		README.txt = README.txt
 		Scatter_Gather.jpg = Scatter_Gather.jpg
 		Scatter_Gather.xml = Scatter_Gather.xml
 		ScatterGather.bat = ScatterGather.bat
+		SharedWorkers.bat = SharedWorkers.bat
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{A881B4C7-1CB9-4909-A731-7856A6856EFA}"
