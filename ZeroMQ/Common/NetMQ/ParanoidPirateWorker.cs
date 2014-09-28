@@ -199,7 +199,7 @@ namespace Common.NetMQ
                 Console.WriteLine("{0} - I: simulating a crash", DateTime.Now.ToLongTimeString());
                 return false;
             }
-            else if (cycle > 1 && rand.Next(4) == 0)
+            else if (cycle > 1 && rand.Next(8) == 0)
             {
                 Console.WriteLine("{0} - I: simulating a CPU overload", DateTime.Now.ToLongTimeString());
                 Thread.Sleep(6000);

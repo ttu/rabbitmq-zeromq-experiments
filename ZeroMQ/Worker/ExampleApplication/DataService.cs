@@ -31,11 +31,13 @@ namespace Worker.ExampleApplication
 
                 var value = _storage[request.Id];
 
+                Console.WriteLine("Found: {0}", value);
+
                 return new DataReply { Value = value };
             }
             else
             {
-                Console.WriteLine("Set data from db");
+                Console.WriteLine("Set data to db: {0}", request.Value);
                 Thread.Sleep(2000); // Hard work, get stuff from db etc.
 
                 _storage[request.Id] = request.Value;

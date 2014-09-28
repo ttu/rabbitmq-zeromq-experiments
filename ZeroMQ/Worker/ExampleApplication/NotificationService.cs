@@ -14,7 +14,7 @@ namespace Worker.ExampleApplication
 
         private void HandleNotificationReveive(string text)
         {
-            Console.WriteLine(text);
+            Console.WriteLine("Received: {0}", text);
         }
     }
 }

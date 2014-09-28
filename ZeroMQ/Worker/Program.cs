@@ -1,5 +1,6 @@
 ﻿using Common;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Worker.ExampleApplication;
@@ -8,14 +9,18 @@ namespace Worker
 {
     internal class Program
     {
-        public static void Main()
+        public static void Main(string[] args)
         {
             Console.WriteLine("[*] Waiting for messages. To exit press CTRL+C");
 
-            //ParanoidWorker();
-            SampleApplication();
-            //SubWorker(true);
-            //ReqWorker();
+            if (args.Count() == 0 || args[0] == "para")
+                ParanoidWorker();
+            else if (args[0] == "sample")
+                SampleApplication();
+            else if (args[0] == "sub")
+                SubWorker(true);
+            else if (args[0] == "req")
+                ReqWorker();
 
             Console.ReadLine();
         }

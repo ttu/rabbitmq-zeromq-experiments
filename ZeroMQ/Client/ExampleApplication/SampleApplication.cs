@@ -40,11 +40,12 @@ namespace Client.ExampleApplication
 
             var value = await _service.SetData(1, 6);
 
-            Console.WriteLine("Set data: {0}", value);
+            Console.WriteLine("Data set from service: {0}", value);
         }
 
         public void PublishNotification(string test)
         {
+            Console.WriteLine("Sending: {0}", test);
             _notification.Send(test);
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Common;
 using Common.clrzmq;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,13 +9,16 @@ namespace Broker
 {
     public class Program
     {
-        public static void Main()
+        public static void Main(string[] args)
         {
             Console.WriteLine("[*] Running the Broker. To exit press CTRL+C");
 
-            ParanoidBroker();
-            //SingleBroker();
-            //PullRepBroker();
+            if (args.Count() == 0 || args[0] == "para")
+                ParanoidBroker();
+            else if (args[0] == "single")
+                SingleBroker();
+            else if (args[0] == "pull")
+                PullRepBroker();
 
             //Console.WriteLine("All tasks finished!");
             Console.ReadLine();

@@ -1,6 +1,7 @@
 ﻿using Client.ExampleApplication;
 using Common;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,10 +12,14 @@ namespace Client
     {
         public static void Main(string[] args)
         {
-            //ParanoidClient();
-            SampleApplication();
-            //PubClient(true);
-            //PushClient();
+            if (args.Count() == 0 || args[0] == "para")
+                ParanoidClient();
+            else if (args[0] == "sample")
+                SampleApplication();
+            else if (args[0] == "pub")
+                PubClient(true);
+            else if (args[0] == "push")
+                PushClient();
 
             //Console.WriteLine("Press any key to quit");
             Console.ReadLine();
