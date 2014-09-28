@@ -19,7 +19,8 @@ namespace Client
             else if (args[0] == "pub")
                 PubClient(true);
             else if (args[0] == "push")
-                PushClient();
+                PushClientNetMQ();
+                //PushClient();
 
             //Console.WriteLine("Press any key to quit");
             Console.ReadLine();
@@ -152,6 +153,45 @@ namespace Client
                 Thread.Sleep(500);
 
             //Task.WaitAll(senderTask, receiverTask);
+        }
+
+        private static void PushClientNetMQ()
+        {
+            int msgCount = 10;
+            Guid clientId = Guid.NewGuid();
+
+            var messagesToSend = new List<CommonRequest>();
+            var receivedMessages = new List<int>();
+
+            for (int i = 0; i < msgCount; i++)
+            {
+                messagesToSend.Add(new CommonRequest
+                {
+                    ClientId = clientId,
+                    RequestId = i,
+                    Message = "Hello: " + i,
+                    Duration = 5000
+                });
+            }
+
+            Console.WriteLine("Client {0}", clientId.ToString().Substring(30));
+
+            var senderTask = Task.Factory.StartNew(() =>
+            {
+                var push = new Common.NetMQ.Push<CommonRequest>("tcp://127.0.0.1:5001");
+
+                var fillTask = Task.Factory.StartNew(() =>
+                {
+                    foreach (var msg in messagesToSend)
+                    {
+                        push.Send(msg);
+                        Console.WriteLine("[x] Sent {0}", msg.RequestId);
+                        Thread.Sleep(2000);
+                    }
+
+                    Console.WriteLine("Sent all");
+                });
+            });
         }
     }
 }

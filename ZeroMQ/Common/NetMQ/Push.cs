@@ -19,7 +19,7 @@ namespace Common.NetMQ
         {
             using (var socket = _context.CreatePushSocket())
             {
-                socket.Connect(_bindEndPoint);
+                socket.Bind(_bindEndPoint);
 
                 var envelope = new NetMQFrame(Encoding.UTF8.GetBytes(request.ToString()));
                 var body = new NetMQFrame(request.ToByteArray());

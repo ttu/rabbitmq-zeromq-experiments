@@ -21,6 +21,8 @@ namespace Worker
                 SubWorker(true);
             else if (args[0] == "req")
                 ReqWorker();
+            else if (args[0] == "pull")
+                PullWorker();
 
             Console.ReadLine();
         }
@@ -28,6 +30,17 @@ namespace Worker
         private static void ParanoidWorker()
         {
             var sub = new Common.NetMQ.ParanoidPirateWorker();
+            sub.Start();
+        }
+
+        private static void PullWorker()
+        {
+            var workMethod = new Action<CommonRequest>(r =>
+            {
+                Console.WriteLine("[*] Received from {0} request: {1}", r.ClientId.ToString().Substring(30), r.RequestId);
+            });
+
+            var sub = new Common.NetMQ.Pull<CommonRequest>("tcp://127.0.0.1:5001", workMethod);
             sub.Start();
         }
 

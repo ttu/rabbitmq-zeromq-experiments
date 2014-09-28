@@ -23,7 +23,7 @@ namespace Common.NetMQ
                 using (var socket = context.CreatePullSocket())
                 {
                     foreach (var bindEndPoint in _bindEndPoints)
-                        socket.Bind(bindEndPoint);
+                        socket.Connect(bindEndPoint);
 
                     socket.ReceiveReady += _socket_ReceiveReady;
 
